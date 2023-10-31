@@ -1,18 +1,6 @@
 ﻿#pragma once
-#include <windows.h>
-#include <d2d1.h>
-#include <dwrite.h>
-#include <comdef.h>
-#include <string>
-#pragma comment(lib, "d2d1")
-#pragma comment(lib, "dwrite")
-
-_COM_SMARTPTR_TYPEDEF(ID2D1Factory, __uuidof(ID2D1Factory));
-_COM_SMARTPTR_TYPEDEF(ID2D1HwndRenderTarget, __uuidof(ID2D1HwndRenderTarget));
-_COM_SMARTPTR_TYPEDEF(ID2D1SolidColorBrush, __uuidof(ID2D1SolidColorBrush));
-_COM_SMARTPTR_TYPEDEF(IDWriteFactory, __uuidof(IDWriteFactory));
-_COM_SMARTPTR_TYPEDEF(IDWriteTextFormat, __uuidof(IDWriteTextFormat));
-_COM_SMARTPTR_TYPEDEF(IDWriteTextLayout, __uuidof(IDWriteTextLayout));
+#include "DataGrid.h"
+#include "Lab2.h"
 
 class Drawer
 {
@@ -22,15 +10,14 @@ public:
 
     bool Initialize(HWND hwndParent);
     bool Render();
-    void Resize(UINT width, UINT height) const;
-    void SetText(const std::wstring& text);
-    std::wstring GetText();
-    HRESULT DrawD2DContent();
+    void Resize(UINT width, UINT height);
+    void Scroll(float delta);
+    void SetData(const std::vector<std::vector<std::wstring>>& data);
     HRESULT CreateDeviceIndependentResources();
 
 private:
     HRESULT CreateDeviceResources();
-    HRESULT DrawTextOnWnd();
+    HRESULT DrawTextOnWnd() const;
 
     HWND windowHandle;
     ID2D1FactoryPtr factory;
@@ -40,7 +27,6 @@ private:
     
     IDWriteFactoryPtr writeFactory;
     IDWriteTextFormatPtr textFormat;
-    IDWriteTextLayoutPtr textLayout;
     
-    std::wstring text;
+    DataGrid dataGrid;
 };

@@ -8,18 +8,11 @@ Drawer::Drawer()
 bool Drawer::Initialize(const HWND hwnd)
 {
     windowHandle = hwnd;
-    return SUCCEEDED(CreateDeviceIndependentResources()) && SUCCEEDED(
-        CreateDeviceResources());
-}
+    if (FAILED(CreateDeviceIndependentResources()))
+        return false;
 
-void Drawer::SetText(const std::wstring& text)
-{
-    this->text = text;
-}
-
-std::wstring Drawer::GetText()
-{
-    return this->text;
+    dataGrid.Initialize(writeFactory, textFormat);
+    return true;
 }
 
 bool Drawer::Render()
@@ -33,7 +26,8 @@ bool Drawer::Render()
     renderTarget->BeginDraw();
 
     renderTarget->Clear(D2D1::ColorF(D2D1::ColorF::White));
-    DrawTextOnWnd();
+    if (FAILED(DrawTextOnWnd()))
+        return false;
 
     renderTarget->EndDraw();
 
@@ -41,22 +35,26 @@ bool Drawer::Render()
     return true;
 }
 
-void Drawer::Resize(const UINT width, const UINT height) const
+void Drawer::Resize(const UINT width, const UINT height)
 {
-    if (textLayout)
-    {
-        textLayout->SetMaxWidth(static_cast<FLOAT>(width));
-        textLayout->SetMaxHeight(static_cast<FLOAT>(height));
-    }
+    D2D1_SIZE_U size;
+    size.width = width;
+    size.height = height;
 
-    if (renderTarget)
-    {
-        D2D1_SIZE_U size;
-        size.width = width;
-        size.height = height;
-        renderTarget->Resize(size);
-    }
+    dataGrid.SetSize(size);
     
+    if (renderTarget)
+        renderTarget->Resize(size);
+}
+
+void Drawer::Scroll(const float delta)
+{
+    dataGrid.Move(D2D1::Point2F(0, delta / 10));
+}
+
+void Drawer::SetData(const std::vector<std::vector<std::wstring>>& data)
+{
+    dataGrid.FillGrid(data);
 }
 
 HRESULT Drawer::CreateDeviceResources()
@@ -94,12 +92,10 @@ HRESULT Drawer::CreateDeviceResources()
 
 HRESULT Drawer::CreateDeviceIndependentResources()
 {
-    HRESULT hr;
-    
-    hr = D2D1CreateFactory(
+    HRESULT hr = D2D1CreateFactory(
         D2D1_FACTORY_TYPE_SINGLE_THREADED,
         &factory
-        );
+    );
     
     if (SUCCEEDED(hr))
     {
@@ -110,17 +106,15 @@ HRESULT Drawer::CreateDeviceIndependentResources()
             );
     }
     
-    text = L"asujdfbuhnoitkjhpogfdsaiGYUSSR";
-    
     if (SUCCEEDED(hr))
     {
         hr = writeFactory->CreateTextFormat(
-            L"TimesNewRoman",              
-            NULL,                        
+            L"TimesNewRoman",
+            nullptr,                        
             DWRITE_FONT_WEIGHT_REGULAR,
             DWRITE_FONT_STYLE_NORMAL,
             DWRITE_FONT_STRETCH_NORMAL,
-            72.0f,
+            18.0f,
             L"en-us",
             &textFormat
             );
@@ -136,43 +130,15 @@ HRESULT Drawer::CreateDeviceIndependentResources()
         hr = textFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
     }
     
-    if (SUCCEEDED(hr))
-    {
-        hr = writeFactory->CreateTextLayout(
-            text.c_str(),  
-            text.length(), 
-            textFormat,  
-            FLT_MAX,        
-            480.0f,         
-            &textLayout  
-            );
-    }
-    
     return hr;
 }
 
-HRESULT Drawer::DrawTextOnWnd()
+HRESULT Drawer::DrawTextOnWnd() const
 {
     RECT rc;
+    GetClientRect(windowHandle,&rc);
 
-    GetClientRect(
-        windowHandle,
-        &rc
-        );
-
-
-    D2D1_POINT_2F origin = D2D1::Point2F(
-        static_cast<FLOAT>(rc.top),
-        static_cast<FLOAT>(rc.left)
-        );
-
-
-
-    renderTarget->DrawTextLayout(
-        origin,
-        textLayout,
-        blackBrush
-        );
+    dataGrid.DrawGrid(*renderTarget, *blackBrush);
 
     return S_OK;
 }
